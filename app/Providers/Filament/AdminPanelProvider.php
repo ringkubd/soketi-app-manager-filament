@@ -53,6 +53,15 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('Dashboard')
+                    ->icon('heroicon-o-home'),
+                NavigationGroup::make()
+                    ->label('Applications')
+                    ->icon('heroicon-o-rectangle-stack'),
+                NavigationGroup::make()
+                    ->label('Users')
+                    ->icon('heroicon-o-users'),
+                NavigationGroup::make()
                     ->label('Documentation')
                     ->icon('heroicon-o-document-text'),
             ])

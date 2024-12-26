@@ -11,6 +11,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 
 class ApplicationResource extends Resource
 {
@@ -76,7 +78,31 @@ class ApplicationResource extends Resource
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                //
+                SelectFilter::make('enabled')
+                    ->label('Active Status')
+                    ->options([
+                        '1' => 'Enabled',
+                        '0' => 'Disabled',
+                    ]),
+                Filter::make('created_at')
+                    ->label('Created Date')
+                    ->form([
+                        Tables\Forms\Components\DatePicker::make('created_from')
+                            ->label('From'),
+                        Tables\Forms\Components\DatePicker::make('created_until')
+                            ->label('Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()->button()->color('gray'),

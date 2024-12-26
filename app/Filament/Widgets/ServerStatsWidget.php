@@ -6,6 +6,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Number;
+use Asantibanez\LivewireCharts\Facades\LivewireCharts;
 
 class ServerStatsWidget extends BaseWidget
 {
@@ -64,5 +65,32 @@ class ServerStatsWidget extends BaseWidget
                     ->color('danger'),
             ];
         }
+    }
+
+    public function render()
+    {
+        $memoryUsage = Http::timeout(5)->get(config('metrics.host').'/usage');
+        $metrics = Http::timeout(5)->get(config('metrics.host').'/metrics');
+
+        $soketiConnected = parse_prometheus('soketi_connected', $metrics->body());
+        $soketiProcessRuntime = parse_prometheus('soketi_process_start_time_seconds', $metrics->body());
+
+        $this->isSoketiRunning = true;
+        $this->connectedApps = auth()->user()->is_admin
+            ? $soketiConnected->toArray()
+            : $soketiConnected->whereIn('json.app_id', auth()->user()->apps->pluck('id'))->toArray();
+        $this->totalConnection = $soketiConnected->pluck('value')->sum();
+
+        $chart = LivewireCharts::columnChartModel()
+            ->setTitle('Server Stats')
+            ->addColumn('Memory Usage', round($memoryUsage->json('memory.percent')), '#4CAF50')
+            ->addColumn('Total Connections', $this->totalConnection, '#F44336');
+
+        return view('filament.widgets.server-stats-widget', [
+            'chart' => $chart,
+            'connectedApps' => $this->connectedApps,
+            'totalConnection' => $this->totalConnection,
+            'isSoketiRunning' => $this->isSoketiRunning,
+        ]);
     }
 }
